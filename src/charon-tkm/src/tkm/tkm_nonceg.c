@@ -37,6 +37,11 @@ struct private_tkm_nonceg_t {
 	 */
 	nc_id_type context_id;
 
+	/**
+	 * Nonce chunk.
+	 */
+	chunk_t nonce;
+
 };
 
 METHOD(nonce_gen_t, get_nonce, bool,
@@ -44,8 +49,16 @@ METHOD(nonce_gen_t, get_nonce, bool,
 {
 	nonce_type nonce;
 
+	this->context_id = tkm->idmgr->acquire_id(tkm->idmgr, TKM_CTX_NONCE);
+	if (this->context_id == 0)
+	{
+		return FALSE;
+	}
+
 	if (ike_nc_create(this->context_id, size, &nonce) != TKM_OK)
 	{
+		tkm->idmgr->release_id(tkm->idmgr, TKM_CTX_NONCE, this->context_id);
+		this->context_id = 0;
 		return FALSE;
 	}
 
@@ -60,6 +73,7 @@ METHOD(nonce_gen_t, allocate_nonce, bool,
 	if (get_nonce(this, chunk->len, chunk->ptr))
 	{
 		tkm->chunk_map->insert(tkm->chunk_map, chunk, this->context_id);
+		this->nonce = *chunk;
 		return TRUE;
 	}
 	return FALSE;
@@ -68,6 +82,19 @@ METHOD(nonce_gen_t, allocate_nonce, bool,
 METHOD(nonce_gen_t, destroy, void,
 	private_tkm_nonceg_t *this)
 {
+	const uint64_t nc_id = tkm->chunk_map->get_id(tkm->chunk_map, &this->nonce);
+	if (nc_id)
+	{
+		DBG1(DBG_IKE, "resetting stale nonce context %llu", nc_id);
+
+		if (ike_nc_reset(nc_id) != TKM_OK)
+		{
+			DBG1(DBG_IKE, "failed to reset nonce context %llu", nc_id);
+		}
+		tkm->idmgr->release_id(tkm->idmgr, TKM_CTX_NONCE, nc_id);
+		tkm->chunk_map->remove(tkm->chunk_map, &this->nonce);
+	}
+
 	free(this);
 }
 
@@ -93,14 +120,8 @@ tkm_nonceg_t *tkm_nonceg_create()
 			},
 			.get_id = _get_id,
 		},
-		.context_id = tkm->idmgr->acquire_id(tkm->idmgr, TKM_CTX_NONCE),
+		.context_id = 0,
 	);
-
-	if (!this->context_id)
-	{
-		free(this);
-		return NULL;
-	}
 
 	return &this->public;
 }
