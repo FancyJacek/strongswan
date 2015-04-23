@@ -33,11 +33,6 @@ struct private_tkm_nonceg_t {
 	tkm_nonceg_t public;
 
 	/**
-	 * Context id.
-	 */
-	nc_id_type context_id;
-
-	/**
 	 * Nonce chunk.
 	 */
 	chunk_t nonce;
@@ -48,21 +43,26 @@ METHOD(nonce_gen_t, get_nonce, bool,
 	private_tkm_nonceg_t *this, size_t size, u_int8_t *buffer)
 {
 	nonce_type nonce;
+	chunk_t chunk;
 
-	this->context_id = tkm->idmgr->acquire_id(tkm->idmgr, TKM_CTX_NONCE);
-	if (this->context_id == 0)
+	const uint64_t nc_id = tkm->idmgr->acquire_id(tkm->idmgr, TKM_CTX_NONCE);
+	if (!nc_id)
 	{
 		return FALSE;
 	}
 
-	if (ike_nc_create(this->context_id, size, &nonce) != TKM_OK)
+	if (ike_nc_create(nc_id, size, &nonce) != TKM_OK)
 	{
-		tkm->idmgr->release_id(tkm->idmgr, TKM_CTX_NONCE, this->context_id);
-		this->context_id = 0;
+		tkm->idmgr->release_id(tkm->idmgr, TKM_CTX_NONCE, nc_id);
 		return FALSE;
 	}
 
 	memcpy(buffer, &nonce.data, size);
+	chunk.ptr = buffer;
+	chunk.len = size;
+	this->nonce = chunk_clone(chunk);
+	tkm->chunk_map->insert(tkm->chunk_map, &this->nonce, nc_id);
+
 	return TRUE;
 }
 
@@ -70,13 +70,7 @@ METHOD(nonce_gen_t, allocate_nonce, bool,
 	private_tkm_nonceg_t *this, size_t size, chunk_t *chunk)
 {
 	*chunk = chunk_alloc(size);
-	if (get_nonce(this, chunk->len, chunk->ptr))
-	{
-		tkm->chunk_map->insert(tkm->chunk_map, chunk, this->context_id);
-		this->nonce = *chunk;
-		return TRUE;
-	}
-	return FALSE;
+	return get_nonce(this, chunk->len, chunk->ptr);
 }
 
 METHOD(nonce_gen_t, destroy, void,
@@ -95,6 +89,7 @@ METHOD(nonce_gen_t, destroy, void,
 		tkm->chunk_map->remove(tkm->chunk_map, &this->nonce);
 	}
 
+	chunk_free(&this->nonce);
 	free(this);
 }
 
@@ -113,7 +108,6 @@ tkm_nonceg_t *tkm_nonceg_create()
 				.destroy = _destroy,
 			},
 		},
-		.context_id = 0,
 	);
 
 	return &this->public;
