@@ -1719,6 +1719,7 @@ AC_CONFIG_FILES([
 	src/libhydra/plugins/kernel_pfroute/Makefile
 	src/libhydra/tests/Makefile
 	src/libipsec/Makefile
+	src/libipsec/tests/Makefile
 	src/libsimaka/Makefile
 	src/libtls/Makefile
 	src/libtls/tests/Makefile
