@@ -1132,9 +1132,7 @@ public class CharonVpnService extends VpnService implements Runnable, VpnStateSe
 					/* fall-through */
 				case SELECTED_APPS_EXCLUDE:
 					mSelectedApps.add(getPackageName());
-					if (!TextUtils.isEmpty(profile.getExcludePackageName())) {
-						mSelectedApps.add(profile.getExcludePackageName());
-					}
+					mSelectedApps.addAll(profile.getExcludePackageNameList());
 					break;
 				case SELECTED_APPS_ONLY:
 					mSelectedApps.remove(getPackageName());

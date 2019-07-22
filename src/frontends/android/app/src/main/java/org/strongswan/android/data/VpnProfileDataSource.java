@@ -520,7 +520,7 @@ public class VpnProfileDataSource
 		profile.setAllowedApplications(convertFromString(cursor.getString(cursor.getColumnIndex(KEY_ALLOWED_APPLICATIONS))));
 		profile.setLoggingLevel(cursor.getInt(cursor.getColumnIndex(KEY_LOGGING_LEVEL)));
 		profile.setByYubikey(cursor.getInt(cursor.getColumnIndex(KEY_YUBIKEY))==1);
-		profile.setExcludePackageName(cursor.getString(cursor.getColumnIndex(KEY_EXCLUDE_PACKAGE_NAME)));
+		profile.setExcludePackageNames(cursor.getString(cursor.getColumnIndex(KEY_EXCLUDE_PACKAGE_NAME)));
 		return profile;
 	}
 
@@ -573,7 +573,7 @@ public class VpnProfileDataSource
 		}
 		values.put(KEY_LOGGING_LEVEL, profile.getLoggingLevel());
 		values.put(KEY_YUBIKEY, profile.isByYubikey() ? 1 : 0);
-		values.put(KEY_EXCLUDE_PACKAGE_NAME, profile.getExcludePackageName());
+		values.put(KEY_EXCLUDE_PACKAGE_NAME, profile.getExcludePackageNames());
 		return values;
 	}
 

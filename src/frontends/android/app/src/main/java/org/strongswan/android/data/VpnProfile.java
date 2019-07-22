@@ -26,6 +26,7 @@ import org.strongswan.android.R;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.UUID;
@@ -52,7 +53,7 @@ public class VpnProfile implements Cloneable
 	private UUID mUUID;
 	private long mId = -1;
 	private boolean byYubikey;
-	private String excludePackageName;
+	private String excludePackageNames;
 
 	private String mCertificateId;
 	private ArrayList<String> allowedApplications = new ArrayList<String>();
@@ -368,12 +369,28 @@ public class VpnProfile implements Cloneable
 		this.byYubikey = byYubikey;
 	}
 
-	public String getExcludePackageName() {
-		return excludePackageName;
+	public String getExcludePackageNames() {
+		return excludePackageNames;
 	}
 
-	public void setExcludePackageName(String excludePackageName) {
-		this.excludePackageName = excludePackageName;
+	public List<String> getExcludePackageNameList() {
+		if (TextUtils.isEmpty(excludePackageNames)) {
+			return new ArrayList<>();
+		}
+
+		return Arrays.asList(excludePackageNames.split("\\s+"));
+	}
+
+	public void setExcludePackageNames(String excludePackageNames) {
+		this.excludePackageNames = excludePackageNames;
+	}
+
+	public void setExcludePackageNameList(List<String> packageNameList) {
+		if (packageNameList == null || packageNameList.isEmpty()) {
+			return;
+		}
+
+		excludePackageNames = TextUtils.join(" ", packageNameList);
 	}
 
 	public Bundle toBundle(Resources resources) {
@@ -390,7 +407,7 @@ public class VpnProfile implements Cloneable
 		bundle.putStringArrayList(resources.getString(R.string.vpn_profile_bundle_allowed_applications), getAllowedApplications());
 		bundle.putInt(resources.getString(R.string.vpn_profile_bundle_logging_level),getLoggingLevel());
 		bundle.putBoolean(resources.getString(R.string.vpn_profile_bundle_by_yubikey), isByYubikey());
-		bundle.putString(resources.getString(R.string.vpn_profile_bundle_exclude_package_name), getExcludePackageName());
+		bundle.putStringArrayList(resources.getString(R.string.vpn_profile_bundle_exclude_package_name), (ArrayList<String>) getExcludePackageNameList());
 		return bundle;
 	}
 
@@ -407,7 +424,7 @@ public class VpnProfile implements Cloneable
 		allowedApplications = bundle.getStringArrayList(resources.getString(R.string.vpn_profile_bundle_allowed_applications));
 		mLoggingLevel = bundle.getInt(resources.getString(R.string.vpn_profile_bundle_logging_level), DEFAULT_LOGGING_LEVEL);
 		byYubikey = bundle.getBoolean(resources.getString(R.string.vpn_profile_bundle_by_yubikey), false);
-		excludePackageName = bundle.getString(resources.getString(R.string.vpn_profile_bundle_exclude_package_name));
+		setExcludePackageNameList(bundle.getStringArrayList(resources.getString(R.string.vpn_profile_bundle_exclude_package_name)));
 	}
 
 	@Override
