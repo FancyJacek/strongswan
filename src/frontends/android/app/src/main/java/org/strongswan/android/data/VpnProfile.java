@@ -51,7 +51,8 @@ public class VpnProfile implements Cloneable
 	private VpnType mVpnType;
 	private UUID mUUID;
 	private long mId = -1;
-	private  boolean byYubikey;
+	private boolean byYubikey;
+	private String excludePackageName;
 
 	private String mCertificateId;
 	private ArrayList<String> allowedApplications = new ArrayList<String>();
@@ -367,6 +368,14 @@ public class VpnProfile implements Cloneable
 		this.byYubikey = byYubikey;
 	}
 
+	public String getExcludePackageName() {
+		return excludePackageName;
+	}
+
+	public void setExcludePackageName(String excludePackageName) {
+		this.excludePackageName = excludePackageName;
+	}
+
 	public Bundle toBundle(Resources resources) {
 		Bundle bundle = new Bundle();
 		bundle.putLong(resources.getString(R.string.vpn_profile_bundle_id_key), getId());
@@ -381,6 +390,7 @@ public class VpnProfile implements Cloneable
 		bundle.putStringArrayList(resources.getString(R.string.vpn_profile_bundle_allowed_applications), getAllowedApplications());
 		bundle.putInt(resources.getString(R.string.vpn_profile_bundle_logging_level),getLoggingLevel());
 		bundle.putBoolean(resources.getString(R.string.vpn_profile_bundle_by_yubikey), isByYubikey());
+		bundle.putString(resources.getString(R.string.vpn_profile_bundle_exclude_package_name), getExcludePackageName());
 		return bundle;
 	}
 
@@ -397,6 +407,7 @@ public class VpnProfile implements Cloneable
 		allowedApplications = bundle.getStringArrayList(resources.getString(R.string.vpn_profile_bundle_allowed_applications));
 		mLoggingLevel = bundle.getInt(resources.getString(R.string.vpn_profile_bundle_logging_level), DEFAULT_LOGGING_LEVEL);
 		byYubikey = bundle.getBoolean(resources.getString(R.string.vpn_profile_bundle_by_yubikey), false);
+		excludePackageName = bundle.getString(resources.getString(R.string.vpn_profile_bundle_exclude_package_name));
 	}
 
 	@Override
