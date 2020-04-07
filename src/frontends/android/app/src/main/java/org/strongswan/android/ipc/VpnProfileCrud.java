@@ -8,6 +8,7 @@
 package org.strongswan.android.ipc;
 
 import android.content.Context;
+import android.content.Intent;
 import android.database.SQLException;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -17,6 +18,7 @@ import android.util.Log;
 import org.strongswan.android.R;
 import org.strongswan.android.data.VpnProfile;
 import org.strongswan.android.data.VpnProfileDataSource;
+import org.strongswan.android.logic.CharonVpnService;
 import org.strongswan.android.security.LocalKeystore;
 
 import java.security.KeyStoreException;
@@ -85,9 +87,16 @@ public class VpnProfileCrud {
         }
         boolean result = source.deleteVpnProfile(profile);
         if(result && profile != null) {
+            disconnectConnections();
             return deleteCertificate(profile.getCertificateId());
         }
         return result;
+    }
+
+    private void disconnectConnections() {
+        Intent intent = new Intent(context, CharonVpnService.class);
+        intent.setAction(CharonVpnService.DISCONNECT_ACTION);
+        context.startService(intent);
     }
 
     public boolean deleteVpnProfiles() {
