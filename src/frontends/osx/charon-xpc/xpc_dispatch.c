@@ -78,6 +78,14 @@ static peer_cfg_t* create_peer_cfg(char *name, char *host)
 	ike_cfg_t *ike_cfg;
 	peer_cfg_t *peer_cfg;
 	uint16_t local_port, remote_port = IKEV2_UDP_PORT;
+	ike_cfg_create_t ike = {
+		.version = IKEV2,
+		.local = "0.0.0.0",
+		.remote = host,
+		.remote_port = IKEV2_UDP_PORT,
+		.no_certreq = TRUE,
+		.fragmentation = FRAGMENTATION_YES,
+	};
 	peer_cfg_create_t peer = {
 		.cert_policy = CERT_SEND_IF_ASKED,
 		.unique = UNIQUE_REPLACE,
@@ -88,13 +96,12 @@ static peer_cfg_t* create_peer_cfg(char *name, char *host)
 		.dpd = 30,
 	};
 
-	local_port = charon->socket->get_port(charon->socket, FALSE);
-	if (local_port != IKEV2_UDP_PORT)
+	ike.local_port = charon->socket->get_port(charon->socket, FALSE);
+	if (ike.local_port != IKEV2_UDP_PORT)
 	{
-		remote_port = IKEV2_NATT_PORT;
+		ike.remote_port = IKEV2_NATT_PORT;
 	}
-	ike_cfg = ike_cfg_create(IKEV2, FALSE, FALSE, "0.0.0.0", local_port,
-							 host, remote_port, FRAGMENTATION_NO, 0);
+	ike_cfg = ike_cfg_create(&ike);
 	ike_cfg->add_proposal(ike_cfg, proposal_create_default(PROTO_IKE));
 	ike_cfg->add_proposal(ike_cfg, proposal_create_default_aead(PROTO_IKE));
 	peer_cfg = peer_cfg_create(name, ike_cfg, &peer);
@@ -143,8 +150,8 @@ static child_cfg_t* create_child_cfg(char *name)
 	child_cfg->add_proposal(child_cfg, proposal_create_from_string(PROTO_ESP,
 										"aes128gcm8-aes128gcm12-aes128gcm16-"
 										"aes256gcm8-aes256gcm12-aes256gcm16"));
-	child_cfg->add_proposal(child_cfg, proposal_create_default(PROTO_ESP));
 	child_cfg->add_proposal(child_cfg, proposal_create_default_aead(PROTO_ESP));
+	child_cfg->add_proposal(child_cfg, proposal_create_default(PROTO_ESP));
 	ts = traffic_selector_create_dynamic(0, 0, 65535);
 	child_cfg->add_traffic_selector(child_cfg, TRUE, ts);
 	ts = traffic_selector_create_from_string(0, TS_IPV4_ADDR_RANGE,

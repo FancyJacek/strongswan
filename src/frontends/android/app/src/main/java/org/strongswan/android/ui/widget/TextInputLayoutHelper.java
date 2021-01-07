@@ -17,10 +17,6 @@ package org.strongswan.android.ui.widget;
 
 import android.content.Context;
 import android.content.res.TypedArray;
-import android.support.annotation.Nullable;
-import android.support.design.widget.TextInputLayout;
-import android.support.v4.view.ViewCompat;
-import android.support.v4.view.ViewPropertyAnimatorListenerAdapter;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.AttributeSet;
@@ -31,14 +27,19 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.google.android.material.textfield.TextInputLayout;
+
 import org.strongswan.android.R;
 
+import androidx.annotation.Nullable;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.ViewPropertyAnimatorListenerAdapter;
 
 /**
  * Layout that extends {@link TextInputLayout} with a helper text
  * displayed below the text field when it receives the focus. Also, any error message shown with
  * {@link #setError(CharSequence)} is hidden when the text field is changed (this mirrors the
- * behavior of {@link EditText}).
+ * behavior of {@link android.widget.EditText}).
  */
 public class TextInputLayoutHelper extends TextInputLayout
 {
@@ -142,7 +143,10 @@ public class TextInputLayoutHelper extends TextInputLayout
 	 */
 	public void setHelperText(CharSequence text)
 	{
-		mHelperText.setText(text);
+		if (mHelperText != null)
+		{
+			mHelperText.setText(text);
+		}
 	}
 
 	private void showHelper(boolean show)

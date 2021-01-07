@@ -639,7 +639,7 @@ following entries are required in `/etc/ipsec.conf`:
 
     conn rw1
         right=%any
-        righsubnet=10.4.0.5/32
+        rightsubnet=10.4.0.5/32
 
     conn rw2
         right=%any
@@ -1144,7 +1144,7 @@ keys are safe.
 
 On a mobile laptop computer the situation is quite different.  The computer can
 be stolen or the user may leave it unattended so that unauthorized persons
-can get access to it.  In theses cases it would be preferable not to keep any
+can get access to it.  In these cases it would be preferable not to keep any
 passphrases openly in `/etc/ipsec.secrets` but to prompt for them interactively
 instead.  This is easily done by defining
 

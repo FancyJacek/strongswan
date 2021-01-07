@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp"
+    android:id="@+id/container">
+
+    <FrameLayout
+        android:id="@+id/window_icon_container"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="60dp"
+        android:layout_centerHorizontal="true">
+
+        <ImageView
+            android:id="@+id/window_icon"
+            android:layout_width="60dp"
+            android:layout_height="65dp"
+            android:src="@drawable/ic_launcher"/>
+
+        <TextView
+            android:id="@+id/special_sign_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            tools:text="3"
+            android:textSize="32dp"
+            android:textStyle="bold"
+            android:textColor="#0000ff"
+            android:layout_gravity="center"/>
+
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/operator_text"
+        android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium"
+        android:layout_below="@+id/window_icon_container"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Plus"
+        android:layout_marginTop="40dp"
+        android:layout_centerHorizontal="true"/>
+
+    <TextView
+        android:id="@+id/header_text"
+        android:textAppearance="@style/Base.TextAppearance.AppCompat.Large"
+        android:textStyle="bold"
+        android:layout_below="@+id/operator_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:layout_centerHorizontal="true"
+        android:gravity="center_horizontal"
+        tools:text="W ciągu 3 dni urządzenie zostanie zablokowane!"/>
+
+    <TextView
+        android:id="@+id/message_text"
+        android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium"
+        android:layout_below="@+id/header_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:layout_centerHorizontal="true"
+        android:gravity="center_horizontal"
+        tools:text="Chcesz tego uniknąć?\nDokonaj natychmiastowej spłaty zaległości!\nW celu wyjaśnienia sprawy prosimy o kontakt pod numerem telefonu 602 900 900"/>
+
+    <Button
+        android:id="@+id/button_ok"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:layout_alignParentBottom="true"
+        android:background="#ff0000"
+        android:text="OK"
+        android:textColor="#ffffff"/>
+
+</RelativeLayout>

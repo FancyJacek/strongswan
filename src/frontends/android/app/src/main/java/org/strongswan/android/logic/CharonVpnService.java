@@ -35,11 +35,8 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.ParcelFileDescriptor;
-import android.preference.PreferenceManager;
 import android.security.KeyChain;
 import android.security.KeyChainException;
-import android.support.v4.app.NotificationCompat;
-import android.support.v4.content.ContextCompat;
 import android.system.OsConstants;
 import android.util.Log;
 
@@ -58,6 +55,7 @@ import org.strongswan.android.utils.Constants;
 import org.strongswan.android.utils.IPRange;
 import org.strongswan.android.utils.IPRangeSet;
 import org.strongswan.android.utils.SettingsWriter;
+import org.strongswan.android.utils.Utils;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -76,6 +74,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.SortedSet;
 
+import androidx.core.app.NotificationCompat;
+import androidx.core.content.ContextCompat;
+import androidx.preference.PreferenceManager;
+
 public class CharonVpnService extends VpnService implements Runnable, VpnStateService.VpnStateListener
 {
 	private static final String TAG = CharonVpnService.class.getSimpleName();
@@ -83,7 +85,6 @@ public class CharonVpnService extends VpnService implements Runnable, VpnStateSe
 	public static final String DISCONNECT_ACTION = "org.strongswan.android.CharonVpnService.DISCONNECT";
 	private static final String NOTIFICATION_CHANNEL = "org.strongswan.android.CharonVpnService.VPN_STATE_NOTIFICATION";
 	public static final String LOG_FILE = "charon.log";
-	public static final String SIMPLE_LOG_FILE = "simple_charon.log";
 	public static final String KEY_IS_RETRY = "retry";
 	public static final int VPN_STATE_NOTIFICATION_ID = 1;
 
@@ -287,7 +288,8 @@ public class CharonVpnService extends VpnService implements Runnable, VpnStateSe
 						SimpleFetcher.enable();
 						addNotification();
 						mBuilderAdapter.setProfile(mCurrentProfile);
-						if (initializeCharon(mBuilderAdapter, mLogFile, mAppDir, mCurrentProfile.getVpnType().has(VpnTypeFeature.BYOD),4)) // TODO-TODO
+						if (initializeCharon(mBuilderAdapter, mLogFile, mAppDir, mCurrentProfile.getVpnType().has(VpnTypeFeature.BYOD),
+											(mCurrentProfile.getFlags() & VpnProfile.FLAGS_IPv6_TRANSPORT) != 0))
 						{
 							Log.i(TAG, "charon started");
 
@@ -774,9 +776,10 @@ public class CharonVpnService extends VpnService implements Runnable, VpnStateSe
 	 * @param logfile absolute path to the logfile
 	 * @param appdir absolute path to the data directory of the app
 	 * @param byod enable BYOD features
+	 * @param ipv6 enable IPv6 transport
 	 * @return TRUE if initialization was successful
 	 */
-	public native boolean initializeCharon(BuilderAdapter builder, String logfile, String appdir, boolean byod, int loglevel);
+	public native boolean initializeCharon(BuilderAdapter builder, String logfile, String appdir, boolean byod, boolean ipv6);
 
 	/**
 	 * Deinitialize charon, provided by libandroidbridge.so
@@ -819,6 +822,12 @@ public class CharonVpnService extends VpnService implements Runnable, VpnStateSe
 			PendingIntent pending = PendingIntent.getActivity(context, 0, intent,
 															  PendingIntent.FLAG_UPDATE_CURRENT);
 			builder.setConfigureIntent(pending);
+
+			/* mark all VPN connections as unmetered (default changed for Android 10) */
+			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+			{
+				builder.setMetered(false);
+			}
 			return builder;
 		}
 
@@ -839,8 +848,7 @@ public class CharonVpnService extends VpnService implements Runnable, VpnStateSe
 		{
 			try
 			{
-				mBuilder.addDnsServer(address);
-				mCache.recordAddressFamily(address);
+				mCache.addDnsServer(address);
 			}
 			catch (IllegalArgumentException ex)
 			{
@@ -1074,8 +1082,9 @@ public class CharonVpnService extends VpnService implements Runnable, VpnStateSe
 		private final int mSplitTunneling;
 		private final SelectedAppsHandling mAppHandling;
 		private final SortedSet<String> mSelectedApps;
+		private final List<InetAddress> mDnsServers = new ArrayList<>();
 		private int mMtu;
-		private boolean mIPv4Seen, mIPv6Seen;
+		private boolean mIPv4Seen, mIPv6Seen, mDnsServersConfigured;
 
 		public BuilderCache(VpnProfile profile)
 		{
@@ -1112,6 +1121,23 @@ public class CharonVpnService extends VpnService implements Runnable, VpnStateSe
 			}
 			mAppHandling = appHandling;
 
+			if (profile.getDnsServers() != null)
+			{
+				for (String server : profile.getDnsServers().split("\\s+"))
+				{
+					try
+					{
+						mDnsServers.add(Utils.parseInetAddress(server));
+						recordAddressFamily(server);
+						mDnsServersConfigured = true;
+					}
+					catch (UnknownHostException e)
+					{
+						e.printStackTrace();
+					}
+				}
+			}
+
 			/* set a default MTU, will be set by the daemon for regular interfaces */
 			Integer mtu = profile.getMTU();
 			mMtu = mtu == null ? Constants.MTU_MAX : mtu;
@@ -1127,6 +1153,25 @@ public class CharonVpnService extends VpnService implements Runnable, VpnStateSe
 			catch (UnknownHostException ex)
 			{
 				ex.printStackTrace();
+			}
+		}
+
+		public void addDnsServer(String address)
+		{
+			/* ignore received DNS servers if any were configured */
+			if (mDnsServersConfigured)
+			{
+				return;
+			}
+
+			try
+			{
+				mDnsServers.add(Utils.parseInetAddress(address));
+				recordAddressFamily(address);
+			}
+			catch (UnknownHostException e)
+			{
+				e.printStackTrace();
 			}
 		}
 
@@ -1179,6 +1224,10 @@ public class CharonVpnService extends VpnService implements Runnable, VpnStateSe
 			for (IPRange address : mAddresses)
 			{
 				builder.addAddress(address.getFrom(), address.getPrefix());
+			}
+			for (InetAddress server : mDnsServers)
+			{
+				builder.addDnsServer(server);
 			}
 			/* add routes depending on whether split tunneling is allowed or not,
 			 * that is, whether we have to handle and block non-VPN traffic */
@@ -1302,7 +1351,7 @@ public class CharonVpnService extends VpnService implements Runnable, VpnStateSe
 
 		private boolean isIPv6(String address) throws UnknownHostException
 		{
-			InetAddress addr = InetAddress.getByName(address);
+			InetAddress addr = Utils.parseInetAddress(address);
 			if (addr instanceof Inet4Address)
 			{
 				return false;

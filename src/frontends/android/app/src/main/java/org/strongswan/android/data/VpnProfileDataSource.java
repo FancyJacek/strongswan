@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012-2018 Tobias Brunner
+ * Copyright (C) 2012-2019 Tobias Brunner
  * Copyright (C) 2012 Giuliano Grassi
  * Copyright (C) 2012 Ralf Sager
  * HSR Hochschule fuer Technik Rapperswil
@@ -55,12 +55,7 @@ public class VpnProfileDataSource
 	public static final String KEY_FLAGS = "flags";
 	public static final String KEY_IKE_PROPOSAL = "ike_proposal";
 	public static final String KEY_ESP_PROPOSAL = "esp_proposal";
-
-	//fancyfon
-	public static final String KEY_CERTIFICATE_ID = "id_certificate";
-	public static final String KEY_ALLOWED_APPLICATIONS = "allowed_applications";
-	private static final String EMPTY_STRING = "";
-	private static final String SPLIT_TUNNELING_DEFAULT_VALUE = "0";
+	public static final String KEY_DNS_SERVERS = "dns_servers";
 
 	private DatabaseHelper mDbHelper;
 	private SQLiteDatabase mDatabase;
@@ -68,38 +63,34 @@ public class VpnProfileDataSource
 
 	private static final String DATABASE_NAME = "strongswan.db";
 	private static final String TABLE_VPNPROFILE = "vpnprofile";
-	public static final String KEY_LOGGING_LEVEL="logging_level";
 
-	private static final int DATABASE_VERSION = 16;
+	private static final int DATABASE_VERSION = 17;
 
 	public static final DbColumn[] COLUMNS = new DbColumn[] {
-			new DbColumn(KEY_ID, "INTEGER PRIMARY KEY AUTOINCREMENT", 1),
-			new DbColumn(KEY_UUID, "TEXT UNIQUE", 9),
-			new DbColumn(KEY_NAME, "TEXT NOT NULL", 1),
-			new DbColumn(KEY_GATEWAY, "TEXT NOT NULL", 1),
-			new DbColumn(KEY_VPN_TYPE, "TEXT NOT NULL", 3),
-			new DbColumn(KEY_USERNAME, "TEXT", 1),
-			new DbColumn(KEY_PASSWORD, "TEXT", 1),
-			new DbColumn(KEY_CERTIFICATE, "TEXT", 1),
-			new DbColumn(KEY_USER_CERTIFICATE, "TEXT", 2),
-			new DbColumn(KEY_MTU, "INTEGER", 5),
-			new DbColumn(KEY_PORT, "INTEGER", 5),
-			new DbColumn(KEY_SPLIT_TUNNELING, "INTEGER", 7),
-			new DbColumn(KEY_LOCAL_ID, "TEXT", 8),
-			new DbColumn(KEY_REMOTE_ID, "TEXT", 8),
-			new DbColumn(KEY_EXCLUDED_SUBNETS, "TEXT", 10),
-			new DbColumn(KEY_INCLUDED_SUBNETS, "TEXT", 11),
-			new DbColumn(KEY_SELECTED_APPS, "INTEGER", 12),
-			new DbColumn(KEY_SELECTED_APPS_LIST, "TEXT", 12),
-			new DbColumn(KEY_NAT_KEEPALIVE, "INTEGER", 13),
-			new DbColumn(KEY_FLAGS, "INTEGER", 14),
-			new DbColumn(KEY_IKE_PROPOSAL, "TEXT", 15),
-			new DbColumn(KEY_ESP_PROPOSAL, "TEXT", 15),
-			// fancyfon
-			new DbColumn(KEY_CERTIFICATE_ID, "TEXT", 15),
-			new DbColumn(KEY_ALLOWED_APPLICATIONS, "TEXT", 15),
-			new DbColumn(KEY_LOGGING_LEVEL, "INTEGER", 15),
-	};
+								new DbColumn(KEY_ID, "INTEGER PRIMARY KEY AUTOINCREMENT", 1),
+								new DbColumn(KEY_UUID, "TEXT UNIQUE", 9),
+								new DbColumn(KEY_NAME, "TEXT NOT NULL", 1),
+								new DbColumn(KEY_GATEWAY, "TEXT NOT NULL", 1),
+								new DbColumn(KEY_VPN_TYPE, "TEXT NOT NULL", 3),
+								new DbColumn(KEY_USERNAME, "TEXT", 1),
+								new DbColumn(KEY_PASSWORD, "TEXT", 1),
+								new DbColumn(KEY_CERTIFICATE, "TEXT", 1),
+								new DbColumn(KEY_USER_CERTIFICATE, "TEXT", 2),
+								new DbColumn(KEY_MTU, "INTEGER", 5),
+								new DbColumn(KEY_PORT, "INTEGER", 5),
+								new DbColumn(KEY_SPLIT_TUNNELING, "INTEGER", 7),
+								new DbColumn(KEY_LOCAL_ID, "TEXT", 8),
+								new DbColumn(KEY_REMOTE_ID, "TEXT", 8),
+								new DbColumn(KEY_EXCLUDED_SUBNETS, "TEXT", 10),
+								new DbColumn(KEY_INCLUDED_SUBNETS, "TEXT", 11),
+								new DbColumn(KEY_SELECTED_APPS, "INTEGER", 12),
+								new DbColumn(KEY_SELECTED_APPS_LIST, "TEXT", 12),
+								new DbColumn(KEY_NAT_KEEPALIVE, "INTEGER", 13),
+								new DbColumn(KEY_FLAGS, "INTEGER", 14),
+								new DbColumn(KEY_IKE_PROPOSAL, "TEXT", 15),
+								new DbColumn(KEY_ESP_PROPOSAL, "TEXT", 15),
+								new DbColumn(KEY_DNS_SERVERS, "TEXT", 17),
+							};
 
 	private static final String[] ALL_COLUMNS = getColumns(DATABASE_VERSION);
 
@@ -239,7 +230,7 @@ public class VpnProfileDataSource
 				db.beginTransaction();
 				try
 				{
-					Cursor cursor = db.query(TABLE_VPNPROFILE, ALL_COLUMNS, KEY_UUID + " is NULL", null, null, null, null);
+					Cursor cursor = db.query(TABLE_VPNPROFILE, getColumns(16), KEY_UUID + " is NULL", null, null, null, null);
 					for (cursor.moveToFirst(); !cursor.isAfterLast(); cursor.moveToNext())
 					{
 						ContentValues values = new ContentValues();
@@ -253,6 +244,11 @@ public class VpnProfileDataSource
 				{
 					db.endTransaction();
 				}
+			}
+			if (oldVersion < 17)
+			{
+				db.execSQL("ALTER TABLE " + TABLE_VPNPROFILE + " ADD " + KEY_DNS_SERVERS +
+						   " TEXT;");
 			}
 		}
 
@@ -459,6 +455,7 @@ public class VpnProfileDataSource
 		profile.setFlags(getInt(cursor, cursor.getColumnIndex(KEY_FLAGS)));
 		profile.setIkeProposal(cursor.getString(cursor.getColumnIndex(KEY_IKE_PROPOSAL)));
 		profile.setEspProposal(cursor.getString(cursor.getColumnIndex(KEY_ESP_PROPOSAL)));
+		profile.setDnsServers(cursor.getString(cursor.getColumnIndex(KEY_DNS_SERVERS)));
 		return profile;
 	}
 
@@ -486,6 +483,7 @@ public class VpnProfileDataSource
 		values.put(KEY_FLAGS, profile.getFlags());
 		values.put(KEY_IKE_PROPOSAL, profile.getIkeProposal());
 		values.put(KEY_ESP_PROPOSAL, profile.getEspProposal());
+		values.put(KEY_DNS_SERVERS, profile.getDnsServers());
 		return values;
 	}
 

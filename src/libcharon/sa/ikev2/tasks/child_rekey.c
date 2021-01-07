@@ -207,6 +207,9 @@ METHOD(task_t, build_i, status_t,
 	this->child_create->use_marks(this->child_create,
 						this->child_sa->get_mark(this->child_sa, TRUE).value,
 						this->child_sa->get_mark(this->child_sa, FALSE).value);
+	this->child_create->use_if_ids(this->child_create,
+						this->child_sa->get_if_id(this->child_sa, TRUE),
+						this->child_sa->get_if_id(this->child_sa, FALSE));
 
 	if (this->child_create->task.build(&this->child_create->task,
 									   message) != NEED_MORE)
@@ -266,6 +269,9 @@ METHOD(task_t, build_r, status_t,
 	this->child_create->use_marks(this->child_create,
 						this->child_sa->get_mark(this->child_sa, TRUE).value,
 						this->child_sa->get_mark(this->child_sa, FALSE).value);
+	this->child_create->use_if_ids(this->child_create,
+						this->child_sa->get_if_id(this->child_sa, TRUE),
+						this->child_sa->get_if_id(this->child_sa, FALSE));
 	config = this->child_sa->get_config(this->child_sa);
 	this->child_create->set_config(this->child_create, config->get_ref(config));
 	this->child_create->task.build(&this->child_create->task, message);
@@ -567,13 +573,14 @@ METHOD(child_rekey_t, collide, void,
 METHOD(task_t, migrate, void,
 	private_child_rekey_t *this, ike_sa_t *ike_sa)
 {
-	if (this->child_create)
-	{
-		this->child_create->task.migrate(&this->child_create->task, ike_sa);
-	}
+	/* only migrate the currently active task */
 	if (this->child_delete)
 	{
 		this->child_delete->task.migrate(&this->child_delete->task, ike_sa);
+	}
+	else if (this->child_create)
+	{
+		this->child_create->task.migrate(&this->child_create->task, ike_sa);
 	}
 	DESTROY_IF(this->collision);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012-2018 Tobias Brunner
+ * Copyright (C) 2012-2019 Tobias Brunner
  * Copyright (C) 2012 Giuliano Grassi
  * Copyright (C) 2012 Ralf Sager
  * HSR Hochschule fuer Technik Rapperswil
@@ -23,8 +23,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.TypedArray;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
-import android.support.v4.content.LocalBroadcastManager;
 import android.util.AttributeSet;
 import android.view.ActionMode;
 import android.view.LayoutInflater;
@@ -50,6 +48,10 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.UUID;
+
+import androidx.fragment.app.Fragment;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import static org.strongswan.android.utils.Constants.VPN_PROFILES_CHANGED_FROM_REMOTE_SERVICE;
 import static org.strongswan.android.utils.Constants.VPN_PROFILES_CHANGED_FROM_REMOTE_SERVICE_PERMISSION;
@@ -254,11 +256,13 @@ public class VpnProfileListFragment extends Fragment
 
 	private final MultiChoiceModeListener mVpnProfileSelected = new MultiChoiceModeListener() {
 		private MenuItem mEditProfile;
+		private MenuItem mCopyProfile;
 
 		@Override
 		public boolean onPrepareActionMode(ActionMode mode, Menu menu)
 		{
 			mEditProfile.setEnabled(mSelected.size() == 1);
+			mCopyProfile.setEnabled(mEditProfile.isEnabled());
 			return true;
 		}
 
@@ -281,6 +285,7 @@ public class VpnProfileListFragment extends Fragment
 
 			}
 			mEditProfile = menu.findItem(R.id.edit_profile);
+			mCopyProfile = menu.findItem(R.id.copy_profile);
 			mode.setTitle(R.string.select_profiles);
 			return true;
 		}
@@ -306,6 +311,24 @@ public class VpnProfileListFragment extends Fragment
 				{
 					int position = mSelected.iterator().next();
 					VpnProfile profile = (VpnProfile)mListView.getItemAtPosition(position);
+					Intent connectionIntent = new Intent(getActivity(), VpnProfileDetailActivity.class);
+					connectionIntent.putExtra(VpnProfileDataSource.KEY_ID, profile.getId());
+					startActivityForResult(connectionIntent, EDIT_REQUEST);
+					break;
+				}
+				case R.id.copy_profile:
+				{
+					int position = mSelected.iterator().next();
+					VpnProfile profile = (VpnProfile)mListView.getItemAtPosition(position);
+					profile = profile.clone();
+					profile.setUUID(UUID.randomUUID());
+					profile.setName(String.format(getString(R.string.copied_name), profile.getName()));
+					mDataSource.insertProfile(profile);
+
+					Intent intent = new Intent(Constants.VPN_PROFILES_CHANGED);
+					intent.putExtra(Constants.VPN_PROFILES_SINGLE, profile.getId());
+					LocalBroadcastManager.getInstance(getActivity()).sendBroadcast(intent);
+
 					Intent connectionIntent = new Intent(getActivity(), VpnProfileDetailActivity.class);
 					connectionIntent.putExtra(VpnProfileDataSource.KEY_ID, profile.getId());
 					startActivityForResult(connectionIntent, EDIT_REQUEST);

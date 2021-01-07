@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Tobias Brunner
+ * Copyright (C) 2016-2020 Tobias Brunner
  * HSR Hochschule fuer Technik Rapperswil
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -16,21 +16,16 @@
 package org.strongswan.android.ui;
 
 import android.app.Activity;
-import android.app.LoaderManager;
 import android.content.ActivityNotFoundException;
-import android.content.AsyncTaskLoader;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.Loader;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.security.KeyChain;
 import android.security.KeyChainAliasCallback;
 import android.security.KeyChainException;
-import android.support.v4.content.LocalBroadcastManager;
-import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.util.Base64;
 import android.view.Menu;
@@ -74,9 +69,16 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.UUID;
 
 import javax.net.ssl.SSLHandshakeException;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.loader.app.LoaderManager;
+import androidx.loader.content.AsyncTaskLoader;
+import androidx.loader.content.Loader;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 public class VpnProfileImportActivity extends AppCompatActivity
 {
@@ -94,7 +96,7 @@ public class VpnProfileImportActivity extends AppCompatActivity
 	private TrustedCertificateEntry mUserCertEntry;
 	private String mUserCertLoading;
 	private boolean mHideImport;
-	private android.support.v4.widget.ContentLoadingProgressBar mProgressBar;
+	private androidx.core.widget.ContentLoadingProgressBar mProgressBar;
 	private TextView mExistsWarning;
 	private ViewGroup mBasicDataGroup;
 	private TextView mName;
@@ -228,7 +230,7 @@ public class VpnProfileImportActivity extends AppCompatActivity
 			mUserCertLoading = savedInstanceState.getString(VpnProfileDataSource.KEY_USER_CERTIFICATE);
 			if (mUserCertLoading != null)
 			{
-				getLoaderManager().initLoader(USER_CERT_LOADER, null, mUserCertificateLoaderCallbacks);
+				LoaderManager.getInstance(this).initLoader(USER_CERT_LOADER, null, mUserCertificateLoaderCallbacks);
 			}
 			mImportUserCert.setEnabled(!savedInstanceState.getBoolean(PKCS12_INSTALLED));
 		}
@@ -311,7 +313,7 @@ public class VpnProfileImportActivity extends AppCompatActivity
 
 		Bundle args = new Bundle();
 		args.putParcelable(PROFILE_URI, uri);
-		getLoaderManager().initLoader(PROFILE_LOADER, args, mProfileLoaderCallbacks);
+		LoaderManager.getInstance(this).initLoader(PROFILE_LOADER, args, mProfileLoaderCallbacks);
 	}
 
 	public void handleProfile(ProfileLoadResult data)
@@ -399,7 +401,7 @@ public class VpnProfileImportActivity extends AppCompatActivity
 			if (mUserCertLoading == null)
 			{
 				mUserCertLoading = getString(R.string.profile_cert_alias, mProfile.getName());
-				getLoaderManager().initLoader(USER_CERT_LOADER, null, mUserCertificateLoaderCallbacks);
+				LoaderManager.getInstance(this).initLoader(USER_CERT_LOADER, null, mUserCertificateLoaderCallbacks);
 			}
 			updateUserCertView();
 		}
@@ -461,8 +463,7 @@ public class VpnProfileImportActivity extends AppCompatActivity
 		}
 		catch (IllegalArgumentException e)
 		{
-			e.printStackTrace();
-			return null;
+			throw new JSONException(getString(R.string.profile_import_failed_value, "uuid"));
 		}
 		ParsedVpnProfile profile = new ParsedVpnProfile();
 		Integer flags = 0;
@@ -503,6 +504,8 @@ public class VpnProfileImportActivity extends AppCompatActivity
 		JSONObject local = obj.optJSONObject("local");
 		if (local != null)
 		{
+			profile.setLocalId(local.optString("id", null));
+
 			if (type.has(VpnTypeFeature.USER_PASS))
 			{
 				profile.setUsername(local.optString("eap_id", null));
@@ -510,7 +513,6 @@ public class VpnProfileImportActivity extends AppCompatActivity
 
 			if (type.has(VpnTypeFeature.CERTIFICATE))
 			{
-				profile.setLocalId(local.optString("id", null));
 				profile.PKCS12 = decodeBase64(local.optString("p12", null));
 
 				if (local.optBoolean("rsa-pss", false))
@@ -522,8 +524,14 @@ public class VpnProfileImportActivity extends AppCompatActivity
 
 		profile.setIkeProposal(getProposal(obj, "ike-proposal", true));
 		profile.setEspProposal(getProposal(obj, "esp-proposal", false));
+		profile.setDnsServers(getAddressList(obj, "dns-servers"));
 		profile.setMTU(getInteger(obj, "mtu", Constants.MTU_MIN, Constants.MTU_MAX));
 		profile.setNATKeepAlive(getInteger(obj, "nat-keepalive", Constants.NAT_KEEPALIVE_MIN, Constants.NAT_KEEPALIVE_MAX));
+		if (obj.optBoolean("ipv6-transport", false))
+		{
+			flags |= VpnProfile.FLAGS_IPv6_TRANSPORT;
+		}
+
 		JSONObject split = obj.optJSONObject("split-tunneling");
 		if (split != null)
 		{
@@ -601,6 +609,44 @@ public class VpnProfileImportActivity extends AppCompatActivity
 												  "split-tunneling." + key));
 			}
 			return ranges.toString();
+		}
+		return null;
+	}
+
+	private String getAddressList(JSONObject obj, String key) throws JSONException
+	{
+		ArrayList<String> addrs = new ArrayList<>();
+		JSONArray arr = obj.optJSONArray(key);
+		if (arr != null)
+		{
+			for (int i = 0; i < arr.length(); i++)
+			{
+				String addr = arr.getString(i).replace(" ", "");
+				addrs.add(addr);
+			}
+		}
+		else
+		{
+			String value = obj.optString(key, null);
+			if (!TextUtils.isEmpty(value))
+			{
+				Collections.addAll(addrs, value.split("\\s+"));
+			}
+		}
+		if (addrs.size() > 0)
+		{
+			for (String addr : addrs)
+			{
+				try
+				{
+					Utils.parseInetAddress(addr);
+				}
+				catch (UnknownHostException e)
+				{
+					throw new JSONException(getString(R.string.profile_import_failed_value, key));
+				}
+			}
+			return TextUtils.join(" ", addrs);
 		}
 		return null;
 	}
@@ -847,7 +893,7 @@ public class VpnProfileImportActivity extends AppCompatActivity
 			{
 				alias = getString(R.string.profile_cert_alias, mProfile.getName());
 			}
-			KeyChain.choosePrivateKeyAlias(VpnProfileImportActivity.this, this, new String[] { "RSA" }, null, null, -1, alias);
+			KeyChain.choosePrivateKeyAlias(VpnProfileImportActivity.this, this, null, null, null, -1, alias);
 		}
 
 		@Override
@@ -862,7 +908,7 @@ public class VpnProfileImportActivity extends AppCompatActivity
 					updateUserCertView();
 					if (alias != null)
 					{	/* otherwise the dialog was canceled, the request denied */
-						getLoaderManager().restartLoader(USER_CERT_LOADER, null, mUserCertificateLoaderCallbacks);
+						LoaderManager.getInstance(VpnProfileImportActivity.this).restartLoader(USER_CERT_LOADER, null, mUserCertificateLoaderCallbacks);
 					}
 				}
 			});
