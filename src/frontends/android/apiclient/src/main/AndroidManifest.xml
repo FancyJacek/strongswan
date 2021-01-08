@@ -3,10 +3,6 @@
     package="com.fancyfon.strongswan.apiclient"
     >
 
-    <uses-sdk
-        android:minSdkVersion="14"
-        android:targetSdkVersion="19" />
-
     <permission android:name="org.strongswan.android.permission.VPN_PROFILE_CRUD" android:protectionLevel="normal"/>
 
     <uses-permission android:name="org.strongswan.android.permission.VPN_PROFILE_CRUD"/>

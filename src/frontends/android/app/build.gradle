@@ -55,7 +55,7 @@ android {
     tasks.withType(JavaCompile) {
         compileTask ->
             if(!project.hasProperty("native-disabled")) {
-                compileTask.dependsOn buildNative
+//                compileTask.dependsOn buildNative
             }
         options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
     }

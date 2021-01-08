@@ -4,5 +4,4 @@
     android:versionCode="26"
     android:versionName="${strongswan.version}" >
 
-    <uses-sdk android:minSdkVersion="14" android:targetSdkVersion="19" />
 </manifest>
