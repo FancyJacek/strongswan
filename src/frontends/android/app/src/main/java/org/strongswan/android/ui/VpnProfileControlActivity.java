@@ -344,17 +344,23 @@ public class VpnProfileControlActivity extends AppCompatActivity
 
 		VpnProfileDataSource dataSource = new VpnProfileDataSource(this);
 		dataSource.open();
-		String profileUUID = intent.getStringExtra(EXTRA_VPN_PROFILE_ID);
-		if (profileUUID != null)
-		{
-			profile = dataSource.getVpnProfile(profileUUID);
-		}
-		else
-		{
-			long profileId = intent.getLongExtra(EXTRA_VPN_PROFILE_ID, 0);
-			if (profileId > 0)
+
+		String profileName = intent.getStringExtra(EXTRA_VPN_PROFILE_ID);
+		profile = dataSource.getVpnProfileByName(profileName);
+
+		if (profile == null) {
+			String profileUUID = intent.getStringExtra(EXTRA_VPN_PROFILE_ID);
+			if (profileUUID != null)
 			{
-				profile = dataSource.getVpnProfile(profileId);
+				profile = dataSource.getVpnProfile(profileUUID);
+			}
+			else
+			{
+				long profileId = intent.getLongExtra(EXTRA_VPN_PROFILE_ID, 0);
+				if (profileId > 0)
+				{
+					profile = dataSource.getVpnProfile(profileId);
+				}
 			}
 		}
 		dataSource.close();
@@ -399,7 +405,11 @@ public class VpnProfileControlActivity extends AppCompatActivity
 		{
 			VpnProfileDataSource dataSource = new VpnProfileDataSource(this);
 			dataSource.open();
-			profile = dataSource.getVpnProfile(profileUUID);
+			profile = dataSource.getVpnProfileByName(profileUUID);
+			if (profile == null) {
+				profile = dataSource.getVpnProfile(profileUUID);
+			}
+
 			dataSource.close();
 		}
 
