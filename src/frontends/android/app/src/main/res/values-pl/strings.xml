@@ -227,6 +227,12 @@
     <string name="tile_connect">Connect VPN</string>
     <string name="tile_disconnect">Disconnect VPN</string>
 
+    <!-- simple logging -->
+    <string name="simple_log_no_network_access">Brak dostępu do sieci</string>
+    <string name="simple_log_connected">Połączono z serwerem</string>
+    <string name="simple_log_disconnected">Rozłączono z serwerem</string>
+    <string name="simple_log_auth_failed">Błąd autoryzacji użytkownika</string>
+
     <string name="yubikey_profile_not_found">Nie odnaleziono profilu Yubikey</string>
 
 </resources>

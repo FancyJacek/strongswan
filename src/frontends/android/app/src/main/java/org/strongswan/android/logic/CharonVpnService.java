@@ -35,10 +35,13 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.ParcelFileDescriptor;
-import android.security.KeyChain;
 import android.security.KeyChainException;
 import android.system.OsConstants;
 import android.util.Log;
+
+import androidx.core.app.NotificationCompat;
+import androidx.core.content.ContextCompat;
+import androidx.preference.PreferenceManager;
 
 import org.strongswan.android.R;
 import org.strongswan.android.data.VpnProfile;
@@ -73,12 +76,7 @@ import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.SortedSet;
-
-import androidx.core.app.NotificationCompat;
-import androidx.core.content.ContextCompat;
-import androidx.preference.PreferenceManager;
 
 public class CharonVpnService extends VpnService implements Runnable, VpnStateService.VpnStateListener
 {
@@ -87,8 +85,11 @@ public class CharonVpnService extends VpnService implements Runnable, VpnStateSe
 	public static final String DISCONNECT_ACTION = "org.strongswan.android.CharonVpnService.DISCONNECT";
 	private static final String NOTIFICATION_CHANNEL = "org.strongswan.android.CharonVpnService.VPN_STATE_NOTIFICATION";
 	public static final String LOG_FILE = "charon.log";
+	public static final String SIMPLE_LOG_FILE = "simple_charon.log";
 	public static final String KEY_IS_RETRY = "retry";
 	public static final int VPN_STATE_NOTIFICATION_ID = 1;
+	private static final String NEXT_PROFILE_ACTION = "org.strongswan.android.NEXT_PROFILE_ACTION";
+	private static final String NEXT_PROFILE_EXTRA = "org.strongswan.android.NEXT_PROFILE_EXTRA";
 
 	private String mLogFile;
 	private String mAppDir;
@@ -247,8 +248,16 @@ public class CharonVpnService extends VpnService implements Runnable, VpnStateSe
 		{
 			this.mNextProfile = profile;
 			mProfileUpdated = true;
+			sendBroadcastNextProfile(profile);
 			notifyAll();
 		}
+	}
+
+	// TODO: security, permission?
+	private void sendBroadcastNextProfile(VpnProfile profile) {
+		Intent broadcastIntent = new Intent(NEXT_PROFILE_ACTION);
+		broadcastIntent.putExtra(NEXT_PROFILE_EXTRA, profile != null ? profile.getName() : null);
+		sendBroadcast(broadcastIntent);
 	}
 
 	@Override
