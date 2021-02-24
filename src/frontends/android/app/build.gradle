@@ -30,8 +30,8 @@ android {
         }
         fancyfon {
             applicationId "com.fancyfon.strongswan"
-            versionName "1.7.0.4"
-            versionCode 53
+            versionName "1.7.0.5"
+            versionCode 54
             setProperty("archivesBaseName", "strongswan_$versionName")
 
         }

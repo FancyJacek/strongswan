@@ -160,6 +160,9 @@ public class CharonVpnService extends VpnService implements Runnable, VpnStateSe
 					uuid = pref.getString(Constants.PREF_MRU_VPN_PROFILE, null);
 				}
 				profile = mDataSource.getVpnProfile(uuid);
+				if (profile == null) {
+					profile = selectFirstVpnProfile();
+				}
 			}
 			else if (!DISCONNECT_ACTION.equals(intent.getAction()))
 			{
@@ -187,6 +190,14 @@ public class CharonVpnService extends VpnService implements Runnable, VpnStateSe
 			setNextProfile(profile);
 		}
 		return START_NOT_STICKY;
+	}
+
+	private VpnProfile selectFirstVpnProfile() {
+		List<VpnProfile> vpnProfiles = mDataSource.getAllVpnProfiles();
+		if (vpnProfiles != null && !vpnProfiles.isEmpty()) {
+			return vpnProfiles.get(0);
+		}
+		return null;
 	}
 
 	@Override
