@@ -55,6 +55,7 @@ import org.strongswan.android.logic.imc.RemediationInstruction;
 import org.strongswan.android.security.LocalKeystore;
 import org.strongswan.android.ui.MainActivity;
 import org.strongswan.android.ui.VpnProfileControlActivity;
+import org.strongswan.android.ui.VpnStateFragment;
 import org.strongswan.android.utils.Constants;
 import org.strongswan.android.utils.IPRange;
 import org.strongswan.android.utils.IPRangeSet;
@@ -503,7 +504,7 @@ public class CharonVpnService extends VpnService implements Runnable, VpnStateSe
 					add_action = true;
 					break;
 				case CONNECTED:
-					s = R.string.state_connected;
+					s = VpnStateFragment.isConnected(getApplicationContext()) ? R.string.state_connected : R.string.state_connected_no_internet;
 					builder.setColor(ContextCompat.getColor(this, R.color.success_text));
 					builder.setUsesChronometer(true);
 					add_action = true;

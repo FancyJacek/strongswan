@@ -177,6 +177,7 @@
     <string name="disconnect">Disconnect</string>
     <string name="state_connecting">Connecting&#8230;</string>
     <string name="state_connected">Connected</string>
+    <string name="state_connected_no_internet">Connected (No internet access)</string>
     <string name="state_disconnecting">Disconnecting&#8230;</string>
     <string name="state_disabled">No active VPN</string>
     <string name="state_error">Error</string>
