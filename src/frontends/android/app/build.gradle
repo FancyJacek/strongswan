@@ -26,9 +26,9 @@ android {
 
             debug {
                 storeFile file("/Users/jacekdermont/praca/Android_Keystore/android.jks")
-                storePassword "xxx"
+                storePassword "PC9KJRxfJdSz"
                 keyAlias "fancyfon"
-                keyPassword "xxx"
+                keyPassword "PC9KJRxfJdSz"
 
                 // Optional, specify signing versions used
                 v1SigningEnabled true
@@ -37,9 +37,9 @@ android {
 
             release {
                 storeFile file("/Users/jacekdermont/praca/Android_Keystore/android.jks")
-                storePassword "xxx"
+                storePassword "PC9KJRxfJdSz"
                 keyAlias "fancyfon"
-                keyPassword "xxx"
+                keyPassword "PC9KJRxfJdSz"
 
                 // Optional, specify signing versions used
                 v1SigningEnabled true
@@ -61,8 +61,8 @@ android {
         }
         fancyfon {
             applicationId "com.fancyfon.strongswan"
-            versionName "1.9.2.0"
-            versionCode 62
+            versionName "1.9.2.1"
+            versionCode 100
             setProperty("archivesBaseName", "strongswan_$versionName")
 
         }
